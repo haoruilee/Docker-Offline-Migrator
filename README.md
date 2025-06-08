@@ -92,11 +92,90 @@ The export process creates a complete offline bundle containing:
 
 ### Import Command
 
-Import and restore a previously exported offline bundle.
+Import and restore a previously exported offline bundle with flexible options.
 
+#### Syntax
+```bash
+docker-migrator import [options]
+```
+
+#### Options
+- `-f <compose.yml>`: Specify compose file in project/ (default: docker-compose.yml)
+- `-r <restore_path>`: Specify restore path for volumes (default: /offline_volumes)
+- `-p <project_name>`: Specify project name prefix for containers (default: auto-detect)
+- `--dry-run`: Only import images and prepare files, don't start services
+- `--verify`: Verify bundle structure and show what would be imported
+- `-h, --help`: Show help message
+
+#### Examples
+
+**Verify the bundle before importing:**
 ```bash
 cd offline_bundle
-docker-migrator import
+docker-migrator import --verify
+```
+
+**Dry-run import (safe testing):**
+```bash
+cd offline_bundle
+docker-migrator import --dry-run
+```
+
+**Import with custom compose file:**
+```bash
+cd offline_bundle
+docker-migrator import -f docker-compose.yaml
+```
+
+**Import to custom volume path:**
+```bash
+cd offline_bundle
+docker-migrator import -r /custom/volumes/path
+```
+
+**Import with custom project name (avoid conflicts):**
+```bash
+cd offline_bundle
+docker-migrator import -p test_env --dry-run
+```
+
+**Full import with custom settings:**
+```bash
+cd offline_bundle
+docker-migrator import -f docker-compose.yaml -r /data/restored_volumes -p production
+```
+
+#### Import Process
+
+The import process:
+
+1. **🔧 Image Import**: Converts container snapshots to Docker images with `:offline` tag
+2. **📌 Volume Restore**: Copies volume data to specified restore path
+3. **📝 Compose Patching**: Creates patched compose file with offline image references
+4. **🚀 Service Startup**: Starts services using patched configuration (unless dry-run)
+
+#### Safe Testing Workflow
+
+For testing without conflicts with existing services:
+
+```bash
+# 1. Verify the bundle
+cd /data/export-dify-offline
+docker-migrator import --verify
+
+# 2. Dry-run to prepare files
+docker-migrator import --dry-run -r /tmp/test_volumes -p test
+
+# 3. Manually edit ports in patched compose file to avoid conflicts
+nano project/docker-compose.patched.yml
+
+# 4. Start services manually for testing
+cd project
+docker compose -f docker-compose.patched.yml up -d
+
+# 5. When satisfied, clean up test environment
+docker compose -f docker-compose.patched.yml down
+docker system prune -f
 ```
 
 ## Directory Structure

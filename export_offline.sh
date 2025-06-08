@@ -3,7 +3,10 @@ set -e
 source scripts/utils.sh
 
 function usage {
-  echo "Usage: $0 export -f <compose.yml> [-f <...>]"
+  echo "Usage: $0 export -f <compose.yml> [-f <...>] [-o <output_dir>]"
+  echo "Options:"
+  echo "  -f <compose.yml>  Specify Docker Compose file (can be used multiple times)"
+  echo "  -o <output_dir>   Specify output directory (default: ./offline_bundle_<timestamp>)"
   exit 1
 }
 
@@ -11,16 +14,31 @@ if [[ "$1" != "export" ]]; then usage; fi
 shift
 
 COMPOSE_FILES=()
-while getopts "f:" opt; do
+OUTPUT_DIR=""
+while getopts "f:o:" opt; do
   case $opt in
     f) COMPOSE_FILES+=("$OPTARG");;
+    o) OUTPUT_DIR="$OPTARG";;
     *) usage ;;
   esac
 done
 
 [[ ${#COMPOSE_FILES[@]} -ge 1 ]] || usage
 PROJECT_DIR=$(pwd)
-EXPORT_DIR="$PROJECT_DIR/offline_bundle_$(date +%s)"
+
+# Set default output directory if not specified
+if [[ -z "$OUTPUT_DIR" ]]; then
+  EXPORT_DIR="$PROJECT_DIR/offline_bundle_$(date +%s)"
+else
+  # Handle relative and absolute paths
+  if [[ "$OUTPUT_DIR" = /* ]]; then
+    EXPORT_DIR="$OUTPUT_DIR"
+  else
+    EXPORT_DIR="$PROJECT_DIR/$OUTPUT_DIR"
+  fi
+fi
+
+echo "📁 Export directory: $EXPORT_DIR"
 mkdir -p "$EXPORT_DIR/containers" "$EXPORT_DIR/volumes" "$EXPORT_DIR/project"
 
 echo "📦 Exporting images → container snapshots"

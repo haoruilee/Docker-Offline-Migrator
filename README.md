@@ -194,3 +194,114 @@ offline_bundle_<timestamp>/
 - **Environment Migration**: Move applications between different hosts
 - **Backup & Recovery**: Create complete application snapshots
 - **Development**: Share complete development environments
+
+## Complete Offline Deployment Workflow
+
+For users who want to deploy an exact copy of their Docker Compose project on a new machine without internet access.
+
+### Quick Start
+
+**On the source machine:**
+```bash
+# 1. Export your running project
+docker-migrator export -f /path/to/docker-compose.yaml -o /data/my-project-offline
+
+# 2. Transfer the bundle to target machine
+# (via USB, network copy, etc.)
+```
+
+**On the target machine:**
+```bash
+# 3. Deploy with one command
+docker-migrator deploy /data/my-project-offline /opt/my-project
+
+# 4. Start services
+cd /opt/my-project
+docker compose up -d
+```
+
+### Deploy Command
+
+Deploy an exported offline bundle to a new location with automatic setup.
+
+#### Syntax
+```bash
+docker-migrator deploy <bundle_path> <target_project_path> [options]
+```
+
+#### Options
+- `--dry-run`: Show what would be done without executing
+- `--backup`: Create backup of existing project
+- `--force`: Overwrite existing project without asking
+- `-h, --help`: Show help message
+
+#### Examples
+
+**Basic deployment:**
+```bash
+docker-migrator deploy /data/export-dify-offline /opt/dify
+```
+
+**Safe deployment with backup:**
+```bash
+docker-migrator deploy /data/export-dify-offline /home/user/dify --backup
+```
+
+**Preview deployment without changes:**
+```bash
+docker-migrator deploy /data/export-dify-offline /opt/dify --dry-run
+```
+
+#### What the Deploy Command Does
+
+1. **🔧 Loads Docker Images**: Imports all exported images and creates simple `:offline` tags
+2. **📁 Deploys Project Files**: Copies the complete project structure to target location
+3. **💾 Restores Volume Data**: Maps and restores all volume data to correct locations
+4. **📝 Updates Compose File**: Automatically replaces image tags with offline versions
+5. **✅ Ready to Start**: Project is immediately ready for `docker compose up -d`
+
+#### Target Directory Structure
+
+After deployment, your target directory will contain:
+```
+/opt/my-project/
+├── docker-compose.yaml          # Updated with :offline tags
+├── docker-compose.yaml.original # Backup of original
+├── volumes/                     # All volume data restored
+│   ├── app/storage/
+│   ├── db/data/
+│   └── redis/data/
+├── nginx/                       # All project files
+├── scripts/
+└── ...
+```
+
+### Alternative: Manual Deployment
+
+If you prefer more control over the deployment process:
+
+**Step 1: Load images and create simple tags**
+```bash
+cd /path/to/bundle
+docker-migrator import --dry-run -p myproject
+/path/to/scripts/create_simple_tags.sh myproject project/docker-compose.yaml
+```
+
+**Step 2: Copy project and update compose file**
+```bash
+cp -r project/ /opt/my-project/
+cd /opt/my-project
+cp docker-compose.yaml docker-compose.yaml.original
+sed -i 's/:1\.4\.0/:offline/g; s/:15-alpine/:offline/g; s/:latest/:offline/g' docker-compose.yaml
+```
+
+**Step 3: Restore volume data**
+```bash
+mkdir -p volumes/
+# Copy volume data from bundle/volumes/ to volumes/ with proper mapping
+```
+
+**Step 4: Start services**
+```bash
+docker compose up -d
+```

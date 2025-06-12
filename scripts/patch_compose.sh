@@ -22,7 +22,7 @@ echo "$available_images" | sed 's/^/  - /'
 # Create patched file
 current_service=""
 {
-  while IFS= read -r l; do
+while IFS= read -r l; do
     # Track current service name
     if [[ "$l" =~ ^[[:space:]]*([a-zA-Z0-9_-]+):[[:space:]]*$ ]]; then
       current_service="${BASH_REMATCH[1]}"
@@ -96,12 +96,12 @@ current_service=""
       vol_dst="${BASH_REMATCH[2]}"
       vol=$(basename "$vol_src")
       tgt="${root}/${vol}:${vol_dst}"
-      echo "      - $tgt"
+    echo "      - $tgt"
       echo "🔄 Patched volume: $vol_src:$vol_dst → $tgt" >&2
-    else
-      echo "$l"
-    fi
-  done < "$in"
+  else
+    echo "$l"
+  fi
+done < "$in"
 } > "$out"
 
 echo "✅ Patch completed: $out"

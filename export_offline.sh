@@ -28,7 +28,7 @@ PROJECT_DIR=$(pwd)
 
 # Set default output directory if not specified
 if [[ -z "$OUTPUT_DIR" ]]; then
-  EXPORT_DIR="$PROJECT_DIR/offline_bundle_$(date +%s)"
+EXPORT_DIR="$PROJECT_DIR/offline_bundle_$(date +%s)"
 else
   # Handle relative and absolute paths
   if [[ "$OUTPUT_DIR" = /* ]]; then
